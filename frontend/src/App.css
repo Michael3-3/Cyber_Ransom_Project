@@ -1,0 +1,68 @@
+body {
+  background-color: #121212;
+  color: #e0e0e0;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.dashboard {
+  padding: 20px;
+}
+
+.title {
+  font-size: 1.8rem;
+  margin-bottom: 20px;
+  font-weight: bold;
+  color: #00aaff; /* blue like the dashboard header */
+}
+
+.controls {
+  margin-bottom: 20px;
+}
+
+.controls button {
+  margin-right: 10px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* Button colors */
+.controls button:nth-child(1) {
+  background-color: #e53935; /* red */
+  color: white;
+}
+.controls button:nth-child(1):hover {
+  background-color: #c62828;
+}
+
+.controls button:nth-child(2) {
+  background-color: #43a047; /* green */
+  color: white;
+}
+.controls button:nth-child(2):hover {
+  background-color: #2e7d32;
+}
+
+.controls button:nth-child(3) {
+  background-color: #1e88e5; /* blue */
+  color: white;
+}
+.controls button:nth-child(3):hover {
+  background-color: #1565c0;
+}
+
+.controls button:nth-child(4) {
+  background-color: #fbc02d; /* yellow */
+  color: #000;
+}
+.controls button:nth-child(4):hover {
+  background-color: #f9a825;
+}
+
+.controls button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
