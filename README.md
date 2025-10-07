@@ -28,24 +28,6 @@ This project is a **cybersecurity system** designed to **detect and prevent rans
 4. Logs events for analysis and auditing.
 5. Ensures recovery by safeguarding uninfected files.
 
-## Installation
-
-1. Clone the repository:
-
-   ```bash
-   git clone <your-repo-url>
-   ```
-2. Install dependencies:
-
-   ```bash
-   pip install -r requirements.txt
-   ```
-3. Run the main script:
-
-   ```bash
-   python main.py
-   ```
-
 ## Usage
 
 * Start the system and let it run in the background.
