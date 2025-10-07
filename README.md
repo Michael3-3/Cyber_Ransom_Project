@@ -1,54 +1,155 @@
 # Intelligent Ransomware Prevention & Detection System
 
-## Project Overview
+> **Warning — Do NOT run on production systems.**
+> This repository is a **controlled educational simulation** of ransomware + detector + decryptor. It is meant for learning, demonstrations, and defensive research only. Always run inside an isolated VM (snapshot), offline or on an isolated network.
 
-This project is a **cybersecurity system** designed to **detect and prevent ransomware attacks** in real-time. It continuously monitors system activity, identifies suspicious behavior, and isolates potential threats to protect critical data and ensure business continuity.
+---
 
-## Features
+## What is this
 
-* **Real-time File Monitoring:** Tracks file behavior for unauthorized access or encryption.
-* **Ransomware Detection:** Detects suspicious activities before files are encrypted.
-* **Prevention Mechanism:** Automatically isolates malicious processes.
-* **Data Protection:** Safeguards important files and prevents loss.
-* **Early Threat Alerts:** Notifies users immediately when a threat is detected.
+This repo is a compact, self-contained **ransomware simulation lab** that includes three main components:
 
-## Tech Stack
+1. **`fake_ransom.py`** — a *demo* ransomware: symmetric (Fernet) encryption of files in a target folder, drops a ransom note, and saves a session key.
+2. **`decrypt.py`** — a rescuer script that uses the saved key to decrypt `.enc` files and securely remove ransom artifacts.
+3. **`detector.py`** — a real-time watcher & responder that:
 
-* **Languages:** Python, Java, C
-* **Libraries & Tools:** System monitoring tools, Encryption libraries, Logging modules
-* **Concepts Applied:** Cybersecurity, Ethical Hacking (VAPT), TCP/IP, Networking
-* **Database (if applicable):** N/A (or specify if used)
-* **Version Control:** Git & GitHub
+   * monitors the target folder for malicious activity using `watchdog`,
+   * polls processes and uses `lsof`/`ps` to find suspicious processes,
+   * kills offending processes (`SIGKILL`) when detected,
+   * restores files from a canonical `test_files` source or timestamped snapshots,
+   * logs activity to `detector.log`.
 
-## How It Works
+This project is **for learning defensive techniques**: how ransomware behaves and how an endpoint protector can detect/mitigate it.
 
-1. Monitors file system activities in real-time.
-2. Detects abnormal behaviors indicative of ransomware.
-3. Triggers alerts and isolates suspicious processes.
-4. Logs events for analysis and auditing.
-5. Ensures recovery by safeguarding uninfected files.
+---
 
-## Usage
+## Technologies Used
 
-* Start the system and let it run in the background.
-* When ransomware-like activity is detected, it will alert you and take preventive actions automatically.
-* Check the logs for details on all monitored activities.
+* **Python 3.8+** — main programming language
+* **cryptography (Fernet)** — symmetric key encryption/decryption
+* **watchdog** — folder monitoring and event handling
+* **lsof / ps** — detecting processes accessing files or network
+* **subprocess / signal / threading** — process control and concurrency
+* **shutil / os / time / datetime / json** — file system manipulation and logging
 
-## Learning Outcomes
-
-* Understanding real-time system monitoring for security threats.
-* Implementing ransomware detection and prevention mechanisms.
-* Practical experience with file encryption behaviors and cybersecurity protocols.
-* Applying ethical hacking and threat analysis concepts.
-
-## Future Enhancements
-
-* Integrate with cloud storage for extended protection.
-* Add AI-based anomaly detection for smarter ransomware prevention.
-* Develop a user-friendly dashboard for monitoring and alerts.
+---
 
 ## Contributors
 
-* **Supritha vallela** – Developer
-* **mikhel pottella** – Developer & Teamlead
+* **Vallela Supritha**
+* **Pottella Mikhel**
+* **G Chandrasekhar**
+
+---
+
+## Prerequisites
+
+* Python 3.8+ (recommended)
+* Virtual environment (optional but strongly recommended)
+* Required Python packages (install via `pip`):
+
+```bash
+pip install -r requirements.txt
+```
+
+`requirements.txt` should include at least:
+
+```
+cryptography
+watchdog
+psutil
+```
+
+> Note: `lsof` is a system tool used by the detector — install it on Linux with `sudo apt install lsof` if needed.
+
+---
+
+## Safe setup (recommended)
+
+1. Create a disposable VM (VirtualBox / VMware / cloud instance) and take a snapshot.
+2. Clone this repo inside the VM.
+3. Create a safe `test_files/` folder with several small sample files (documents, images, txt).
+4. Make sure the VM has no important personal data or mounted shared folders.
+5. Ensure you have a snapshot you can roll back to.
+
+---
+
+## Quick demo (safe order)
+
+**Run the detector first** (so it can catch and restore):
+
+```bash
+python detector.py
+```
+
+Open a second terminal and (only in the isolated VM) run the simulated ransomware on the target folder:
+
+```bash
+python fake_ransom.py
+```
+
+Watch the detector terminal and `detector.log` — the detector will:
+
+* notice `.enc` files or suspicious process activity,
+* attempt to identify the offending PID using `ps` and `lsof`,
+* `SIGKILL` the process if found,
+* restore files from `test_files` or a snapshot.
+
+If needed, you can run the decryptor manually (when you have the key file) to recover files:
+
+```bash
+python decrypt.py
+```
+
+---
+
+## Project layout
+
+```
+/ (repo root)
+├─ fake_ransom.py        # demo attacker script (encrypts files under attack_target_fixed)
+├─ decrypt.py            # decryptor that restores .enc files using session_key_fixed.key
+├─ detector.py           # watchdog + process poller + snapshot + auto-restore
+├─ test_files/           # canonical (clean) files used to reseed target
+├─ attack_target_fixed/  # target folder (created / reseeded by detector)
+├─ detector_snapshots/   # snapshot backups created by detector
+├─ session_key_fixed.key # generated by fake_ransom.py when it runs (demo key)
+├─ detector.log          # runtime log produced by detector
+└─ README.md
+```
+
+---
+
+## Notes for demonstration / talking points
+
+* **Symmetric encryption**: This repo uses Fernet (AES + HMAC). One key encrypts and decrypts — that key must be protected.
+* **Why detector works**: It relies on *behavioral* signals (mass file I/O, rapid `.enc` creation, process touching files) — not just signatures.
+* **Snapshots + canonical source**: useful for fast recovery and forensics; in real deployments, offline backups are critical.
+* **Limitations**: secure deletion is not guaranteed on SSDs and journaled filesystems; detector needs appropriate privileges to kill higher-privilege processes.
+
+---
+
+## Safety & ethics (MUST READ)
+
+* This repository is provided **only** for research, defensive development, and education.
+* Do **not** use it to attack or disrupt systems that you do not own and have explicit permission to test.
+* Always follow your institution's / organization's rules and applicable laws when performing security testing.
+
+---
+
+## Troubleshooting
+
+* If the detector cannot find `lsof`, install it: `sudo apt install lsof`.
+* If the detector cannot kill a process due to permissions, run the detector with the same or higher privileges as the process under test.
+* If decrypt fails for a file, keep the key file and encrypted artifacts so you can debug — the decryptor is designed to avoid deleting the key unless all files restored.
+
+---
+
+## License
+
+Choose a license that fits your intent (e.g., MIT for educational projects). Include a clear disclaimer about intended use.
+
+---
+
+*Made with ❤️ for learning. Contributors:  Vallela Supritha, Pottella Mikhel,G Chandrasekhar*
 
