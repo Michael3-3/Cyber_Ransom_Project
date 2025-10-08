@@ -1,167 +1,154 @@
-🧠 Intelligent Ransomware Prevention & Detection System
+# Intelligent Ransomware Prevention & Detection System
 
-⚠️ Warning — Do NOT run on production systems.
-This repository is a controlled educational simulation of ransomware + detector + decryptor.
-It is meant for learning, demonstrations, and defensive research only.
-Always run inside an isolated VM (snapshot), offline or on an isolated network.
+> **Warning — Do NOT run on production systems.**
+> This repository is a **controlled educational simulation** of ransomware + detector + decryptor. It is meant for learning, demonstrations, and defensive research only. Always run inside an isolated VM (snapshot), offline or on an isolated network.
 
-📘 Overview
+---
 
-This repository is a compact, self-contained ransomware simulation lab that includes three main components:
+## What is this
 
-fake_ransom.py — A demo ransomware that:
+This repo is a compact, self-contained **ransomware simulation lab** that includes three main components:
 
-Encrypts files in a target folder using symmetric (Fernet) encryption
+1. **`fake_ransom.py`** — a *demo* ransomware: symmetric (Fernet) encryption of files in a target folder, drops a ransom note, and saves a session key.
+2. **`decrypt.py`** — a rescuer script that uses the saved key to decrypt `.enc` files and securely remove ransom artifacts.
+3. **`detector.py`** — a real-time watcher & responder that:
 
-Drops a ransom note
+   * monitors the target folder for malicious activity using `watchdog`,
+   * polls processes and uses `lsof`/`ps` to find suspicious processes,
+   * kills offending processes (`SIGKILL`) when detected,
+   * restores files from a canonical `test_files` source or timestamped snapshots,
+   * logs activity to `detector.log`.
 
-Saves a session key
+This project is **for learning defensive techniques**: how ransomware behaves and how an endpoint protector can detect/mitigate it.
 
-decrypt.py — A rescuer script that:
+---
 
-Uses the saved key to decrypt .enc files
+## Technologies Used
 
-Securely removes ransom artifacts
+* **Python 3.8+** — main programming language
+* **cryptography (Fernet)** — symmetric key encryption/decryption
+* **watchdog** — folder monitoring and event handling
+* **lsof / ps** — detecting processes accessing files or network
+* **subprocess / signal / threading** — process control and concurrency
+* **shutil / os / time / datetime / json** — file system manipulation and logging
 
-detector.py — A real-time watcher and responder that:
+---
 
-Monitors the target folder for malicious activity using watchdog
+## Contributors
 
-Polls processes and uses lsof / ps to find suspicious ones
+* **Vallela Supritha**
+* **Pottella Mikhel**
+* **G Chandrasekhar**
 
-Kills offending processes (SIGKILL) when detected
+---
 
-Restores files from a canonical test_files source or timestamped snapshots
+## Prerequisites
 
-Logs activity to detector.log
+* Python 3.8+ (recommended)
+* Virtual environment (optional but strongly recommended)
+* Required Python packages (install via `pip`):
 
-This project is for learning defensive techniques — to understand how ransomware behaves and how endpoint protectors can detect and mitigate it.
-
-🛠️ Technologies Used
-
-Python 3.8+
-
-cryptography (Fernet) — for symmetric encryption/decryption
-
-watchdog — for real-time folder monitoring
-
-lsof / ps — for process and file access detection
-
-subprocess / signal / threading — for process control and concurrency
-
-shutil / os / time / datetime / json — for filesystem and logging operations
-
-👩‍💻 Contributors
-
-Vallela Supritha
-
-Pottella Mikhel
-
-G Chandrasekhar
-
-📦 Prerequisites
-Requirements
-
-Python 3.8+ (recommended)
-
-Virtual environment (recommended)
-
-Required Python packages (install using pip):
-
+```bash
 pip install -r requirements.txt
+```
 
+`requirements.txt` should include at least:
 
-requirements.txt should include:
-
+```
 cryptography
 watchdog
 psutil
+```
 
+> Note: `lsof` is a system tool used by the detector — install it on Linux with `sudo apt install lsof` if needed.
 
-Note: Install lsof on Linux if missing:
+---
 
-sudo apt install lsof
+## Safe setup (recommended)
 
-🧰 Safe Setup (Recommended)
+1. Create a disposable VM (VirtualBox / VMware / cloud instance) and take a snapshot.
+2. Clone this repo inside the VM.
+3. Create a safe `test_files/` folder with several small sample files (documents, images, txt).
+4. Make sure the VM has no important personal data or mounted shared folders.
+5. Ensure you have a snapshot you can roll back to.
 
-Create a disposable VM (VirtualBox / VMware / Cloud) and take a snapshot.
+---
 
-Clone this repository inside the VM.
+## Quick demo (safe order)
 
-Create a safe folder test_files/ containing sample files (text, images, documents).
+**Run the detector first** (so it can catch and restore):
 
-Ensure no personal or shared data exists in the VM.
-
-Confirm you have a snapshot to roll back.
-
-🚀 Quick Demo (Safe Order)
-Step 1 — Run the Detector
+```bash
 python detector.py
+```
 
-Step 2 — Simulate Ransomware (in another terminal)
+Open a second terminal and (only in the isolated VM) run the simulated ransomware on the target folder:
+
+```bash
 python fake_ransom.py
+```
 
+Watch the detector terminal and `detector.log` — the detector will:
 
-Watch the detector’s output and check the detector.log.
-You’ll notice it:
+* notice `.enc` files or suspicious process activity,
+* attempt to identify the offending PID using `ps` and `lsof`,
+* `SIGKILL` the process if found,
+* restore files from `test_files` or a snapshot.
 
-Detects .enc files or suspicious processes
+If needed, you can run the decryptor manually (when you have the key file) to recover files:
 
-Identifies the offending PID (ps / lsof)
-
-Kills the ransomware process
-
-Restores files from snapshots or test_files/
-
-Step 3 — Manual Decryption (Optional)
-
-If you have the key file, you can manually decrypt files:
-
+```bash
 python decrypt.py
+```
 
-📁 Project Layout
+---
+
+## Project layout
+
+```
 / (repo root)
-├─ fake_ransom.py        # demo ransomware (encrypts files)
-├─ decrypt.py            # decryptor using saved session key
-├─ detector.py           # real-time watcher and auto-restorer
-├─ test_files/           # clean source files
-├─ attack_target_fixed/  # target folder under attack
-├─ detector_snapshots/   # backup snapshots
-├─ session_key_fixed.key # generated encryption key
-├─ detector.log          # detector runtime logs
+├─ fake_ransom.py        # demo attacker script (encrypts files under attack_target_fixed)
+├─ decrypt.py            # decryptor that restores .enc files using session_key_fixed.key
+├─ detector.py           # watchdog + process poller + snapshot + auto-restore
+├─ test_files/           # canonical (clean) files used to reseed target
+├─ attack_target_fixed/  # target folder (created / reseeded by detector)
+├─ detector_snapshots/   # snapshot backups created by detector
+├─ session_key_fixed.key # generated by fake_ransom.py when it runs (demo key)
+├─ detector.log          # runtime log produced by detector
 └─ README.md
+```
 
-💡 Key Concepts / Talking Points
+---
 
-Symmetric Encryption:
-Uses Fernet (AES + HMAC). One key for both encryption and decryption — must be protected.
+## Notes for demonstration / talking points
 
-Behavioral Detection:
-Detector works by monitoring unusual behavior (rapid .enc creation, file access spikes) — not signatures.
+* **Symmetric encryption**: This repo uses Fernet (AES + HMAC). One key encrypts and decrypts — that key must be protected.
+* **Why detector works**: It relies on *behavioral* signals (mass file I/O, rapid `.enc` creation, process touching files) — not just signatures.
+* **Snapshots + canonical source**: useful for fast recovery and forensics; in real deployments, offline backups are critical.
+* **Limitations**: secure deletion is not guaranteed on SSDs and journaled filesystems; detector needs appropriate privileges to kill higher-privilege processes.
 
-Snapshots & Backups:
-Enables quick recovery and forensics; in real-world cases, offline backups are crucial.
+---
 
-Limitations:
-Secure deletion is not guaranteed on SSDs or journaled filesystems.
-Detector needs proper privileges to terminate higher-privilege processes.
+## Safety & ethics (MUST READ)
 
-⚖️ Safety & Ethics (Must Read)
+* This repository is provided **only** for research, defensive development, and education.
+* Do **not** use it to attack or disrupt systems that you do not own and have explicit permission to test.
+* Always follow your institution's / organization's rules and applicable laws when performing security testing.
 
-This repository is for research, defense, and education only.
+---
 
-Do not use it to harm or disrupt systems you don’t own or manage.
+## Troubleshooting
 
-Follow your organization’s policies and local laws during any security testing.
+* If the detector cannot find `lsof`, install it: `sudo apt install lsof`.
+* If the detector cannot kill a process due to permissions, run the detector with the same or higher privileges as the process under test.
+* If decrypt fails for a file, keep the key file and encrypted artifacts so you can debug — the decryptor is designed to avoid deleting the key unless all files restored.
 
-🧩 Troubleshooting
-Issue	Solution
-lsof not found	Install via sudo apt install lsof
-Permission denied when killing process	Run detector with admin/root privileges
-Decryptor fails	Keep .key and .enc files; debug manually
-📜 License
+---
 
-Choose an appropriate open-source license (e.g., MIT) and include a disclaimer on intended educational use.
+## License
 
-Made with ❤️ for learning.
-Contributors: Vallela Supritha • Pottella Mikhel • G Chandrasekhar
+Choose a license that fits your intent (e.g., MIT for educational projects). Include a clear disclaimer about intended use.
+
+---
+
+*Made with ❤️ for learning. Contributors:  Vallela Supritha, Pottella Mikhel,G Chandrasekhar* dont change anything im this just changte the structure and give me 
