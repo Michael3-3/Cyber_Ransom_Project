@@ -151,4 +151,4 @@ Choose a license that fits your intent (e.g., MIT for educational projects). Inc
 
 ---
 
-*Made with ❤️ for learning. Contributors:  Vallela Supritha, Pottella Mikhel,G Chandrasekhar* dont change anything im this just changte the structure and give me 
+*Made with ❤️ for learning. Contributors:  Vallela Supritha, Pottella Mikhel,G Chandrasekhar* 
